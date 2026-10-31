@@ -1,3 +1,1 @@
-...
-
-docker network create proxy-net
+# Homelab plan of AI.
