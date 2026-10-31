@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # VPN Kill-Switch Gateway for Torrenting
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - '8080:8080' # qBittorrent Web UI (Exposed via Gluetun)
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - VPN_TYPE=${VPN_TYPE}
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      - TZ=${TZ:-UTC}
+    networks:
+      - media-net
+
+  # Download Engine (Strictly Isolated Behind VPN)
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-UTC}
+      - WEBUI_PORT=8080
+    volumes:
+      - ./appdata/qbittorrent:/config
+      - /mnt/data:/mnt/data
+
+  # Indexer Aggregator
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./appdata/prowlarr:/config
+    networks:
+      - media-net
+
+  # TV Automation
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./appdata/sonarr:/config
+      - /mnt/data:/mnt/data
+    networks:
+      - media-net
+
+  # Movie Automation
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./appdata/radarr:/config
+      - /mnt/data:/mnt/data
+    networks:
+      - media-net
+
+  # Media Server
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./appdata/jellyfin:/config
+      - /mnt/data/media:/data/media
+    networks:
+      - media-net
+      - proxy-net
+
+  # Request Management
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./appdata/jellyseerr:/config
+    networks:
+      - media-net
+      - proxy-net
+
+networks:
+  media-net:
+    name: media-net
+    driver: bridge
+  proxy-net:
+    name: proxy-net
+    external: true

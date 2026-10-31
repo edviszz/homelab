@@ -7,13 +7,14 @@ services:
     restart: unless-stopped
     ports:
       - '80:80'
-      - '81:81' # Admin Web UI
+      - '81:81'
       - '443:443'
-    volumes:
-      - './data:/data'
-      - './letsencrypt:/etc/letsencrypt'
     environment:
+      - TZ=${TZ:-UTC}
       - DISABLE_IPV6=true
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
     networks:
       - proxy-net
 

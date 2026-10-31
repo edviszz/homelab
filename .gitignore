@@ -1,0 +1,24 @@
+# Environment & Secrets
+.env
+*.env
+!.env.example
+
+# Docker & App Data Volumes (Local state, certs, databases)
+**/data/
+**/letsencrypt/
+**/appdata/
+**/config/
+**/db/
+
+# Logs & Temp Files
+*.log
+*.sqlite
+*.db
+.DS_Store
+Thumbs.db
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
